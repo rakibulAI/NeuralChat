@@ -1,7 +1,9 @@
+
 name: Build APK
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -13,10 +15,10 @@ jobs:
           distribution: 'temurin'
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.16.0'
-      - name: Extract ZIP
-        run: unzip chat_app_flutter.zip
-      - name: Get dependencies
+          flutter-version: '3.19.0'
+      - name: Unzip project
+        run: unzip chat_app_flutter.zip -d .
+      - name: Flutter pub get
         run: cd chat_app && flutter pub get
       - name: Build APK
         run: cd chat_app && flutter build apk --release
