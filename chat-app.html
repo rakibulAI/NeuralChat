@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>চ্যাট অ্যাপ</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #13131a;
+    --bg3: #1c1c28;
+    --card: #1e1e2e;
+    --accent: #7c5cfc;
+    --accent2: #fc5c7d;
+    --accent3: #56ccf2;
+    --text: #e8e8f0;
+    --text2: #9090a8;
+    --border: #2a2a3e;
+    --green: #2ecc71;
+    --online: #00e676;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { height:100%; overflow:hidden; font-family:'Hind Siliguri',sans-serif; background:var(--bg); color:var(--text); }
+
+  /* SPLASH */
+  #splash {
+    position:fixed; inset:0; background:var(--bg);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    z-index:999; transition:opacity .5s ease;
+  }
+  .splash-logo {
+    width:90px; height:90px; border-radius:28px;
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    display:flex; align-items:center; justify-content:center;
+    font-size:40px; margin-bottom:20px;
+    box-shadow:0 0 40px rgba(124,92,252,.5);
+    animation: pulse 1.5s ease infinite;
+  }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.07)} }
+  .splash-title { font-size:28px; font-weight:700; color:var(--text); }
+  .splash-sub { font-size:14px; color:var(--text2); margin-top:6px; }
+  .splash-bar { width:160px; height:3px; background:var(--bg3); border-radius:3px; margin-top:36px; overflow:hidden; }
+  .splash-fill { height:100%; border-radius:3px; background:linear-gradient(90deg,var(--accent),var(--accent2)); animation:fill 1.8s ease forwards; }
+  @keyframes fill { from{width:0} to{width:100%} }
+
+  /* LAYOUT */
+  #app { display:flex; flex-direction:column; height:100vh; overflow:hidden; }
+
+  /* SCREENS */
+  .screen { display:none; flex:1; flex-direction:column; overflow:hidden; }
+  .screen.active { display:flex; }
+
+  /* ===== AUTH SCREEN ===== */
+  #auth-screen {
+    background: linear-gradient(160deg, #0a0a1a 0%, #12112a 50%, #0f1020 100%);
+    align-items:center; justify-content:center; padding:30px 24px;
+  }
+  .auth-logo {
+    width:80px; height:80px; border-radius:24px;
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    display:flex; align-items:center; justify-content:center; font-size:36px;
+    box-shadow:0 8px 32px rgba(124,92,252,.4); margin-bottom:24px;
+  }
+  .auth-title { font-size:26px; font-weight:700; text-align:center; margin-bottom:6px; }
+  .auth-sub { font-size:14px; color:var(--text2); text-align:center; margin-bottom:36px; }
+  .auth-form { width:100%; max-width:340px; }
+  .auth-input {
+    width:100%; padding:14px 18px; border-radius:14px;
+    background:var(--bg3); border:1.5px solid var(--border);
+    color:var(--text); font-size:15px; font-family:inherit;
+    margin-bottom:14px; outline:none; transition:.2s;
+  }
+  .auth-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(124,92,252,.2); }
+  .auth-btn {
+    width:100%; padding:15px; border-radius:14px;
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    color:#fff; font-size:16px; font-weight:600; font-family:inherit;
+    border:none; cursor:pointer; margin-bottom:14px;
+    box-shadow:0 4px 20px rgba(124,92,252,.4);
+    transition:.2s; letter-spacing:.3px;
+  }
+  .auth-btn:active { transform:scale(.97); }
+  .auth-switch { text-align:center; font-size:14px; color:var(--text2); }
+  .auth-switch a { color:var(--accent); text-decoration:none; font-weight:600; }
+  .avatar-pick { display:flex; gap:10px; justify-content:center; margin-bottom:18px; flex-wrap:wrap; }
+  .avatar-opt {
+    width:52px; height:52px; border-radius:50%; font-size:26px;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--bg3); border:2px solid var(--border);
+    cursor:pointer; transition:.2s;
+  }
+  .avatar-opt.selected { border-color:var(--accent); transform:scale(1.1); box-shadow:0 0 12px rgba(124,92,252,.5); }
+
+  /* ===== TOP BAR ===== */
+  .topbar {
+    padding:14px 18px 10px;
+    background:var(--bg);
+    border-bottom:1px solid var(--border);
+    display:flex; align-items:center; gap:12px;
+    flex-shrink:0;
+  }
+  .topbar-title { font-size:20px; font-weight:700; flex:1; }
+  .topbar-back { font-size:22px; cursor:pointer; padding:4px; }
+  .topbar-icon {
+    width:38px; height:38px; border-radius:12px;
+    background:var(--bg3); border:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-size:18px;
+    transition:.2s;
+  }
+  .topbar-icon:active { transform:scale(.92); }
+
+  /* ===== BOTTOM NAV ===== */
+  .bottom-nav {
+    display:flex; background:var(--bg); border-top:1px solid var(--border);
+    padding-bottom:env(safe-area-inset-bottom,0); flex-shrink:0;
+  }
+  .nav-item {
+    flex:1; display:flex; flex-direction:column; align-items:center;
+    padding:10px 0 8px; cursor:pointer; transition:.2s; position:relative;
+  }
+  .nav-item .ni { font-size:22px; line-height:1; }
+  .nav-item .nl { font-size:10px; color:var(--text2); margin-top:3px; transition:.2s; }
+  .nav-item.active .nl { color:var(--accent); }
+  .nav-item.active .ni { filter:drop-shadow(0 0 6px var(--accent)); }
+  .nav-dot {
+    position:absolute; top:7px; right:calc(50% - 14px);
+    width:8px; height:8px; border-radius:50%; background:var(--accent2);
+    border:2px solid var(--bg);
+  }
+
+  /* ===== HOME (CHATS) ===== */
+  #home-screen { background:var(--bg); }
+  .search-bar {
+    margin:12px 16px; display:flex; align-items:center; gap:10px;
+    background:var(--bg3); border-radius:14px; padding:10px 16px;
+    border:1.5px solid var(--border);
+  }
+  .search-bar input {
+    flex:1; background:none; border:none; outline:none;
+    color:var(--text); font-size:14px; font-family:inherit;
+  }
+
+  /* Story Row */
+  .story-row { padding:4px 0 14px; overflow-x:auto; display:flex; gap:12px; padding-left:16px; flex-shrink:0; }
+  .story-row::-webkit-scrollbar { display:none; }
+  .story-item { display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer; flex-shrink:0; }
+  .story-ring {
+    width:60px; height:60px; border-radius:50%;
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    padding:2.5px; position:relative;
+  }
+  .story-ring .inner {
+    width:100%; height:100%; border-radius:50%; background:var(--bg);
+    display:flex; align-items:center; justify-content:center; font-size:26px;
+    border:2px solid var(--bg);
+  }
+  .story-ring.seen { background:var(--bg3); }
+  .story-add-btn {
+    position:absolute; bottom:0; right:0;
+    width:20px; height:20px; border-radius:50%;
+    background:var(--accent); color:#fff; font-size:14px;
+    display:flex; align-items:center; justify-content:center;
+    border:2px solid var(--bg);
+  }
+  .story-name { font-size:11px; color:var(--text2); max-width:60px; text-align:center; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+
+  /* Chat List */
+  .chat-list { flex:1; overflow-y:auto; padding:0 0 8px; }
+  .chat-list::-webkit-scrollbar { display:none; }
+  .chat-item {
+    display:flex; align-items:center; gap:14px;
+    padding:12px 18px; cursor:pointer; transition:.15s;
+    border-bottom:1px solid rgba(255,255,255,.04);
+  }
+  .chat-item:active { background:var(--bg3); }
+  .chat-avatar {
+    width:52px; height:52px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:26px;
+    background:var(--bg3); position:relative;
+  }
+  .online-dot {
+    position:absolute; bottom:1px; right:1px;
+    width:13px; height:13px; border-radius:50%;
+    background:var(--online); border:2px solid var(--bg);
+  }
+  .chat-info { flex:1; min-width:0; }
+  .chat-name { font-size:15px; font-weight:600; margin-bottom:3px; }
+  .chat-preview { font-size:13px; color:var(--text2); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  .chat-meta { display:flex; flex-direction:column; align-items:flex-end; gap:5px; flex-shrink:0; }
+  .chat-time { font-size:11px; color:var(--text2); }
+  .chat-badge {
+    background:var(--accent); color:#fff; font-size:11px; font-weight:700;
+    min-width:18px; height:18px; border-radius:9px; display:flex; align-items:center; justify-content:center;
+    padding:0 5px;
+  }
+
+  /* ===== CHAT SCREEN ===== */
+  #chat-screen { background:var(--bg); }
+  .chat-topbar { padding:12px 16px 10px; background:var(--bg); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; flex-shrink:0; }
+  .ct-avatar { width:40px; height:40px; border-radius:50%; background:var(--bg3); display:flex; align-items:center; justify-content:center; font-size:22px; position:relative; }
+  .ct-info { flex:1; }
+  .ct-name { font-size:16px; font-weight:700; }
+  .ct-status { font-size:12px; color:var(--online); }
+
+  .messages { flex:1; overflow-y:auto; padding:16px 14px; display:flex; flex-direction:column; gap:8px; }
+  .messages::-webkit-scrollbar { display:none; }
+
+  .msg-group { display:flex; flex-direction:column; gap:3px; }
+  .msg-row { display:flex; align-items:flex-end; gap:8px; }
+  .msg-row.mine { flex-direction:row-reverse; }
+
+  .bubble {
+    max-width:72%; padding:10px 14px; border-radius:18px;
+    font-size:14px; line-height:1.5; position:relative;
+    word-break:break-word;
+  }
+  .bubble.them { background:var(--bg3); border-bottom-left-radius:5px; color:var(--text); }
+  .bubble.mine { background:linear-gradient(135deg, var(--accent), #5a3fd4); border-bottom-right-radius:5px; color:#fff; }
+  .bubble-time { font-size:10px; opacity:.6; margin-top:4px; text-align:right; }
+
+  .bubble-img { max-width:200px; border-radius:14px; overflow:hidden; cursor:pointer; }
+  .bubble-img img { width:100%; display:block; }
+
+  .voice-bubble {
+    display:flex; align-items:center; gap:10px; padding:10px 14px;
+    background:var(--bg3); border-radius:18px; border-bottom-left-radius:5px;
+    min-width:160px; cursor:pointer;
+  }
+  .voice-bubble.mine { background:linear-gradient(135deg, var(--accent), #5a3fd4); border-bottom-left-radius:18px; border-bottom-right-radius:5px; }
+  .play-btn { font-size:20px; }
+  .voice-wave { display:flex; align-items:center; gap:2px; flex:1; }
+  .wbar { width:3px; border-radius:2px; background:rgba(255,255,255,.4); animation:wave 1s ease infinite; }
+  .wbar:nth-child(1){height:8px; animation-delay:.0s}
+  .wbar:nth-child(2){height:14px; animation-delay:.1s}
+  .wbar:nth-child(3){height:20px; animation-delay:.2s}
+  .wbar:nth-child(4){height:12px; animation-delay:.3s}
+  .wbar:nth-child(5){height:18px; animation-delay:.4s}
+  .wbar:nth-child(6){height:10px; animation-delay:.5s}
+  .wbar:nth-child(7){height:16px; animation-delay:.6s}
+  @keyframes wave { 0%,100%{transform:scaleY(1)} 50%{transform:scaleY(1.6)} }
+  .voice-dur { font-size:12px; opacity:.7; }
+
+  .date-divider { text-align:center; font-size:12px; color:var(--text2); margin:10px 0; }
+  .date-divider span { background:var(--bg3); padding:4px 12px; border-radius:20px; }
+
+  /* Input bar */
+  .input-bar {
+    display:flex; align-items:center; gap:10px;
+    padding:10px 14px 14px; background:var(--bg);
+    border-top:1px solid var(--border); flex-shrink:0;
+    padding-bottom:calc(10px + env(safe-area-inset-bottom,0));
+  }
+  .input-wrap {
+    flex:1; display:flex; align-items:center; gap:8px;
+    background:var(--bg3); border-radius:24px; padding:8px 14px;
+    border:1.5px solid var(--border);
+  }
+  .input-wrap input {
+    flex:1; background:none; border:none; outline:none;
+    color:var(--text); font-size:14px; font-family:inherit;
+  }
+  .ibar-btn {
+    width:38px; height:38px; border-radius:50%;
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    border:none; cursor:pointer; display:flex; align-items:center;
+    justify-content:center; font-size:18px; flex-shrink:0;
+    box-shadow:0 2px 12px rgba(124,92,252,.4); transition:.2s;
+  }
+  .ibar-btn:active { transform:scale(.9); }
+  .ibar-icon { font-size:22px; cursor:pointer; padding:4px; }
+  #voice-indicator {
+    display:none; align-items:center; gap:8px;
+    flex:1; padding:8px 14px; background:rgba(252,92,125,.15);
+    border-radius:24px; border:1.5px solid rgba(252,92,125,.3);
+  }
+  #voice-indicator.active { display:flex; }
+  .rec-dot { width:10px; height:10px; border-radius:50%; background:var(--accent2); animation:blink .8s ease infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+  /* ===== STATUS SCREEN ===== */
+  #status-screen { background:var(--bg); }
+  .my-status {
+    display:flex; align-items:center; gap:14px;
+    padding:14px 18px; border-bottom:1px solid var(--border);
+    cursor:pointer;
+  }
+  .add-story-btn {
+    width:52px; height:52px; border-radius:50%;
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    display:flex; align-items:center; justify-content:center;
+    font-size:26px; flex-shrink:0;
+  }
+  .status-list-section { padding:12px 18px 6px; font-size:13px; color:var(--text2); font-weight:600; }
+  .status-list { overflow-y:auto; flex:1; }
+  .status-list::-webkit-scrollbar { display:none; }
+
+  /* Status Viewer */
+  #story-viewer {
+    position:fixed; inset:0; background:#000; z-index:200;
+    display:none; flex-direction:column;
+  }
+  #story-viewer.active { display:flex; }
+  .sv-top { padding:48px 16px 12px; position:relative; z-index:2; }
+  .sv-bars { display:flex; gap:4px; margin-bottom:14px; }
+  .sv-bar { flex:1; height:3px; background:rgba(255,255,255,.3); border-radius:2px; overflow:hidden; }
+  .sv-fill { height:100%; background:#fff; border-radius:2px; }
+  .sv-fill.active { animation:svfill 4s linear forwards; }
+  .sv-fill.done { width:100%; }
+  @keyframes svfill { from{width:0} to{width:100%} }
+  .sv-user { display:flex; align-items:center; gap:10px; }
+  .sv-avatar { width:38px; height:38px; border-radius:50%; background:var(--bg3); display:flex; align-items:center; justify-content:center; font-size:20px; }
+  .sv-name { font-size:15px; font-weight:600; color:#fff; }
+  .sv-time { font-size:12px; color:rgba(255,255,255,.6); }
+  .sv-close { position:absolute; top:48px; right:16px; font-size:24px; color:#fff; cursor:pointer; padding:4px; z-index:3; }
+  .sv-body { flex:1; display:flex; align-items:center; justify-content:center; font-size:80px; position:relative; }
+  .sv-nav { position:absolute; inset:0; display:flex; }
+  .sv-nav-left { flex:1; } .sv-nav-right { flex:1; }
+  .sv-caption { padding:24px 20px 40px; font-size:16px; color:#fff; text-align:center; font-weight:500; }
+
+  /* ===== PROFILE SCREEN ===== */
+  #profile-screen { background:var(--bg); overflow-y:auto; }
+  #profile-screen::-webkit-scrollbar { display:none; }
+  .profile-header {
+    background:linear-gradient(160deg, var(--accent), var(--accent2));
+    padding:50px 24px 30px; text-align:center; position:relative;
+  }
+  .profile-avatar-big {
+    width:90px; height:90px; border-radius:50%; margin:0 auto 14px;
+    background:rgba(255,255,255,.2); display:flex; align-items:center;
+    justify-content:center; font-size:48px; border:3px solid rgba(255,255,255,.4);
+    position:relative;
+  }
+  .profile-edit-icon {
+    position:absolute; bottom:2px; right:2px; width:26px; height:26px;
+    border-radius:50%; background:#fff; display:flex; align-items:center;
+    justify-content:center; font-size:14px; cursor:pointer;
+  }
+  .profile-name { font-size:22px; font-weight:700; color:#fff; }
+  .profile-bio { font-size:13px; color:rgba(255,255,255,.8); margin-top:4px; }
+  .profile-stats { display:flex; gap:0; margin-top:18px; }
+  .pstat { flex:1; text-align:center; }
+  .pstat-num { font-size:20px; font-weight:700; color:#fff; }
+  .pstat-label { font-size:11px; color:rgba(255,255,255,.75); margin-top:1px; }
+  .pstat + .pstat { border-left:1px solid rgba(255,255,255,.2); }
+
+  .profile-section { padding:18px 20px; border-bottom:1px solid var(--border); }
+  .psec-title { font-size:12px; color:var(--text2); font-weight:600; margin-bottom:14px; letter-spacing:.5px; text-transform:uppercase; }
+  .prow {
+    display:flex; align-items:center; gap:14px; padding:10px 0;
+    border-bottom:1px solid rgba(255,255,255,.04); cursor:pointer;
+  }
+  .prow:last-child { border-bottom:none; }
+  .prow-icon { width:38px; height:38px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+  .prow-text { flex:1; font-size:15px; font-weight:500; }
+  .prow-arr { color:var(--text2); font-size:18px; }
+  .prow-toggle {
+    width:44px; height:24px; border-radius:12px; background:var(--bg3);
+    position:relative; cursor:pointer; transition:.3s; border:1.5px solid var(--border);
+  }
+  .prow-toggle.on { background:var(--accent); border-color:var(--accent); }
+  .prow-toggle::after {
+    content:''; position:absolute; top:2px; left:2px;
+    width:16px; height:16px; border-radius:50%; background:#fff;
+    transition:.3s;
+  }
+  .prow-toggle.on::after { left:calc(100% - 18px); }
+  .logout-btn {
+    margin:20px 20px 30px; padding:14px; border-radius:14px;
+    background:rgba(252,92,125,.15); border:1.5px solid rgba(252,92,125,.3);
+    color:var(--accent2); font-size:15px; font-weight:600;
+    font-family:inherit; cursor:pointer; width:calc(100% - 40px);
+    transition:.2s;
+  }
+  .logout-btn:active { transform:scale(.97); }
+
+  /* ===== STORY CREATOR ===== */
+  #story-creator {
+    position:fixed; inset:0; background:var(--bg); z-index:150;
+    display:none; flex-direction:column;
+  }
+  #story-creator.active { display:flex; }
+  .sc-top { padding:52px 20px 16px; display:flex; align-items:center; gap:14px; border-bottom:1px solid var(--border); }
+  .sc-body { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; padding:30px 24px; }
+  .sc-preview {
+    width:100%; flex:1; border-radius:20px;
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    display:flex; align-items:center; justify-content:center; font-size:60px;
+    max-height:280px;
+  }
+  .sc-input-wrap { width:100%; }
+  .sc-input {
+    width:100%; padding:14px 18px; border-radius:14px;
+    background:var(--bg3); border:1.5px solid var(--border);
+    color:var(--text); font-size:15px; font-family:inherit; outline:none;
+  }
+  .sc-post-btn {
+    width:100%; padding:15px; border-radius:14px;
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    color:#fff; font-size:16px; font-weight:600; font-family:inherit;
+    border:none; cursor:pointer;
+  }
+  .emoji-grid { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
+  .emoji-btn { font-size:32px; cursor:pointer; padding:4px; border-radius:10px; transition:.2s; }
+  .emoji-btn.selected { background:var(--bg3); transform:scale(1.2); }
+
+  /* Image preview overlay */
+  #img-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,.95); z-index:300;
+    display:none; align-items:center; justify-content:center; flex-direction:column;
+  }
+  #img-overlay.active { display:flex; }
+  #img-overlay img { max-width:90%; max-height:80vh; border-radius:12px; }
+  #img-overlay .close-img { position:absolute; top:20px; right:20px; font-size:28px; color:#fff; cursor:pointer; }
+
+  /* Toast */
+  .toast {
+    position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--card); border:1px solid var(--border); border-radius:12px;
+    padding:10px 20px; font-size:14px; color:var(--text);
+    opacity:0; transition:.3s; z-index:500; white-space:nowrap;
+    box-shadow:0 4px 20px rgba(0,0,0,.4);
+  }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* Emoji picker */
+  .emoji-picker {
+    position:absolute; bottom:70px; left:14px; right:14px;
+    background:var(--bg3); border:1px solid var(--border); border-radius:18px;
+    padding:14px; display:none; z-index:10;
+    box-shadow:0 -4px 30px rgba(0,0,0,.4);
+  }
+  .emoji-picker.active { display:grid; grid-template-columns:repeat(8,1fr); gap:6px; }
+  .ep-em { font-size:24px; text-align:center; cursor:pointer; padding:4px; border-radius:8px; transition:.1s; }
+  .ep-em:active { background:var(--bg); transform:scale(1.2); }
+
+  /* Typing indicator */
+  .typing-bubble { display:flex; gap:4px; align-items:center; padding:10px 14px; background:var(--bg3); border-radius:18px; border-bottom-left-radius:5px; width:60px; }
+  .tdot { width:7px; height:7px; border-radius:50%; background:var(--text2); animation:tdot 1.2s ease infinite; }
+  .tdot:nth-child(2){animation-delay:.2s} .tdot:nth-child(3){animation-delay:.4s}
+  @keyframes tdot { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+  .section-label { font-size:13px; color:var(--text2); font-weight:600; padding:10px 18px 4px; }
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-logo">💬</div>
+  <div class="splash-title">চ্যাট অ্যাপ</div>
+  <div class="splash-sub">সবার সাথে থাকুন</div>
+  <div class="splash-bar"><div class="splash-fill"></div></div>
+</div>
+
+<div id="app">
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen" class="screen">
+  <div id="login-view">
+    <div class="auth-logo">💬</div>
+    <div class="auth-title">স্বাগতম!</div>
+    <div class="auth-sub">আপনার অ্যাকাউন্টে লগিন করুন</div>
+    <div class="auth-form">
+      <input class="auth-input" id="login-phone" type="text" placeholder="📱 ফোন নম্বর বা নাম">
+      <input class="auth-input" id="login-pass" type="password" placeholder="🔒 পাসওয়ার্ড">
+      <button class="auth-btn" onclick="doLogin()">লগিন করুন →</button>
+      <div class="auth-switch">অ্যাকাউন্ট নেই? <a onclick="showReg()">রেজিস্ট্রেশন করুন</a></div>
+    </div>
+  </div>
+  <div id="reg-view" style="display:none; width:100%; max-width:340px;">
+    <div class="auth-logo">✨</div>
+    <div class="auth-title">নতুন অ্যাকাউন্ট</div>
+    <div class="auth-sub">আপনার প্রোফাইল সেটআপ করুন</div>
+    <div class="auth-form">
+      <div style="font-size:13px; color:var(--text2); margin-bottom:10px; text-align:center;">একটি ইমোজি বেছে নিন</div>
+      <div class="avatar-pick" id="avatar-pick">
+        <div class="avatar-opt selected" onclick="pickAvatar(this,'😊')">😊</div>
+        <div class="avatar-opt" onclick="pickAvatar(this,'🦁')">🦁</div>
+        <div class="avatar-opt" onclick="pickAvatar(this,'🐯')">🐯</div>
+        <div class="avatar-opt" onclick="pickAvatar(this,'🦊')">🦊</div>
+        <div class="avatar-opt" onclick="pickAvatar(this,'🐻')">🐻</div>
+        <div class="avatar-opt" onclick="pickAvatar(this,'🦋')">🦋</div>
+        <div class="avatar-opt" onclick="pickAvatar(this,'🌟')">🌟</div>
+        <div class="avatar-opt" onclick="pickAvatar(this,'🎭')">🎭</div>
+      </div>
+      <input class="auth-input" id="reg-name" type="text" placeholder="👤 আপনার নাম">
+      <input class="auth-input" id="reg-phone" type="text" placeholder="📱 ফোন নম্বর">
+      <input class="auth-input" id="reg-pass" type="password" placeholder="🔒 পাসওয়ার্ড">
+      <button class="auth-btn" onclick="doRegister()">অ্যাকাউন্ট তৈরি করুন →</button>
+      <div class="auth-switch">আগে থেকে আছেন? <a onclick="showLogin()">লগিন করুন</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- HOME SCREEN -->
+<div id="home-screen" class="screen">
+  <div class="topbar">
+    <div class="topbar-title">💬 বার্তা</div>
+    <button class="topbar-icon" onclick="showToast('নতুন চ্যাট')">✏️</button>
+    <button class="topbar-icon" onclick="goProfile()">👤</button>
+  </div>
+  <div class="search-bar">
+    <span>🔍</span>
+    <input type="text" placeholder="খুঁজুন..." oninput="filterChats(this.value)">
+  </div>
+
+  <!-- Stories -->
+  <div class="story-row" id="story-row"></div>
+
+  <!-- Chat List -->
+  <div class="chat-list" id="chat-list"></div>
+
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="switchTab('home',this)">
+      <div class="ni">💬</div><div class="nl">চ্যাট</div>
+    </div>
+    <div class="nav-item" onclick="switchTab('status',this)">
+      <div class="ni">⭕</div><div class="nl">স্ট্যাটাস</div>
+      <div class="nav-dot"></div>
+    </div>
+    <div class="nav-item" onclick="switchTab('profile',this)">
+      <div class="ni">👤</div><div class="nl">প্রোফাইল</div>
+    </div>
+  </div>
+</div>
+
+<!-- CHAT SCREEN -->
+<div id="chat-screen" class="screen">
+  <div class="chat-topbar">
+    <span class="topbar-back" onclick="goHome()">◀</span>
+    <div class="ct-avatar" id="ct-avatar"></div>
+    <div class="ct-info">
+      <div class="ct-name" id="ct-name"></div>
+      <div class="ct-status" id="ct-status"></div>
+    </div>
+    <button class="topbar-icon" onclick="showToast('📞 কল করছি...')">📞</button>
+    <button class="topbar-icon" onclick="showToast('📹 ভিডিও কল')">📹</button>
+  </div>
+
+  <div class="messages" id="messages"></div>
+
+  <div class="emoji-picker" id="emoji-picker"></div>
+
+  <div class="input-bar">
+    <span class="ibar-icon" onclick="toggleEmoji()">😊</span>
+    <div class="input-wrap" id="input-wrap">
+      <input type="text" id="msg-input" placeholder="বার্তা লিখুন..." onkeydown="if(event.key==='Enter')sendMsg()">
+      <span class="ibar-icon" onclick="pickImage()">📷</span>
+    </div>
+    <div id="voice-indicator">
+      <div class="rec-dot"></div>
+      <span style="font-size:13px; color:var(--accent2);">রেকর্ডিং...</span>
+    </div>
+    <button class="ibar-btn" id="send-btn" onclick="sendMsg()">➤</button>
+    <button class="ibar-btn" id="voice-btn" onclick="toggleVoice()" style="display:none; background:linear-gradient(135deg,var(--accent2),#e91e63);">🎤</button>
+  </div>
+  <input type="file" id="img-input" accept="image/*" style="display:none" onchange="handleImg(event)">
+</div>
+
+<!-- STATUS SCREEN -->
+<div id="status-screen" class="screen">
+  <div class="topbar">
+    <div class="topbar-title">⭕ স্ট্যাটাস</div>
+    <button class="topbar-icon" onclick="openStoryCreator()">➕</button>
+  </div>
+  <div class="my-status" onclick="openStoryCreator()">
+    <div class="add-story-btn">➕</div>
+    <div>
+      <div style="font-weight:600; font-size:15px;">আমার স্ট্যাটাস</div>
+      <div style="font-size:13px; color:var(--text2);">ট্যাপ করুন স্ট্যাটাস দিতে</div>
+    </div>
+  </div>
+  <div class="status-list-section">সাম্প্রতিক আপডেট</div>
+  <div class="status-list" id="status-list"></div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="switchTab('home',this)">
+      <div class="ni">💬</div><div class="nl">চ্যাট</div>
+    </div>
+    <div class="nav-item active" onclick="switchTab('status',this)">
+      <div class="ni">⭕</div><div class="nl">স্ট্যাটাস</div>
+    </div>
+    <div class="nav-item" onclick="switchTab('profile',this)">
+      <div class="ni">👤</div><div class="nl">প্রোফাইল</div>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE SCREEN -->
+<div id="profile-screen" class="screen">
+  <div class="topbar">
+    <div class="topbar-title">আমার প্রোফাইল</div>
+    <button class="topbar-icon" onclick="showToast('সেটিংস')">⚙️</button>
+  </div>
+  <div class="profile-header">
+    <div class="profile-avatar-big" id="prof-avatar-big">
+      <div class="profile-edit-icon">✏️</div>
+    </div>
+    <div class="profile-name" id="prof-name"></div>
+    <div class="profile-bio" id="prof-bio"></div>
+    <div class="profile-stats">
+      <div class="pstat"><div class="pstat-num">48</div><div class="pstat-label">বন্ধু</div></div>
+      <div class="pstat"><div class="pstat-num">12</div><div class="pstat-label">স্ট্যাটাস</div></div>
+      <div class="pstat"><div class="pstat-num">3</div><div class="pstat-label">গ্রুপ</div></div>
+    </div>
+  </div>
+  <div class="profile-section">
+    <div class="psec-title">অ্যাকাউন্ট</div>
+    <div class="prow"><div class="prow-icon" style="background:#7c5cfc22">📱</div><div class="prow-text" id="prof-phone"></div><div class="prow-arr">›</div></div>
+    <div class="prow" onclick="editBio()"><div class="prow-icon" style="background:#fc5c7d22">✏️</div><div class="prow-text">বায়ো পরিবর্তন করুন</div><div class="prow-arr">›</div></div>
+    <div class="prow"><div class="prow-icon" style="background:#56ccf222">🔒</div><div class="prow-text">পাসওয়ার্ড পরিবর্তন</div><div class="prow-arr">›</div></div>
+  </div>
+  <div class="profile-section">
+    <div class="psec-title">প্রাইভেসি ও নিরাপত্তা</div>
+    <div class="prow"><div class="prow-icon" style="background:#2ecc7122">👁️</div><div class="prow-text">লাস্ট সিন</div><div class="prow-toggle on" onclick="this.classList.toggle('on')"></div></div>
+    <div class="prow"><div class="prow-icon" style="background:#f39c1222">🔔</div><div class="prow-text">নোটিফিকেশন</div><div class="prow-toggle on" onclick="this.classList.toggle('on')"></div></div>
+    <div class="prow"><div class="prow-icon" style="background:#9b59b622">🌙</div><div class="prow-text">ডার্ক মোড</div><div class="prow-toggle on" onclick="this.classList.toggle('on')"></div></div>
+  </div>
+  <div class="profile-section">
+    <div class="psec-title">অন্যান্য</div>
+    <div class="prow" onclick="showToast('স্টোরেজ: ৮৪ MB ব্যবহৃত')"><div class="prow-icon" style="background:#1abc9c22">💾</div><div class="prow-text">স্টোরেজ ও ডেটা</div><div class="prow-arr">›</div></div>
+    <div class="prow" onclick="showToast('অ্যাপ শেয়ার করুন!')"><div class="prow-icon" style="background:#e74c3c22">📤</div><div class="prow-text">বন্ধুদের সাথে শেয়ার করুন</div><div class="prow-arr">›</div></div>
+    <div class="prow" onclick="showToast('ভার্সন: ১.০.০')"><div class="prow-icon" style="background:#3498db22">ℹ️</div><div class="prow-text">সম্পর্কে</div><div class="prow-arr">›</div></div>
+  </div>
+  <button class="logout-btn" onclick="doLogout()">🚪 লগআউট</button>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="switchTab('home',this)"><div class="ni">💬</div><div class="nl">চ্যাট</div></div>
+    <div class="nav-item" onclick="switchTab('status',this)"><div class="ni">⭕</div><div class="nl">স্ট্যাটাস</div></div>
+    <div class="nav-item active" onclick="switchTab('profile',this)"><div class="ni">👤</div><div class="nl">প্রোফাইল</div></div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<!-- Story Creator -->
+<div id="story-creator">
+  <div class="sc-top">
+    <span style="font-size:22px; cursor:pointer" onclick="closeStoryCreator()">✕</span>
+    <span style="font-size:18px; font-weight:700;">নতুন স্ট্যাটাস</span>
+  </div>
+  <div class="sc-body">
+    <div class="sc-preview" id="sc-preview">😊</div>
+    <div style="width:100%">
+      <div style="font-size:13px; color:var(--text2); margin-bottom:10px;">ইমোজি বেছে নিন</div>
+      <div class="emoji-grid" id="story-emoji-grid"></div>
+    </div>
+    <div class="sc-input-wrap">
+      <input class="sc-input" id="sc-text" placeholder="কিছু লিখুন... (ঐচ্ছিক)">
+    </div>
+    <button class="sc-post-btn" onclick="postStory()">স্ট্যাটাস দিন ✓</button>
+  </div>
+</div>
+
+<!-- Story Viewer -->
+<div id="story-viewer">
+  <div class="sv-top">
+    <div class="sv-bars" id="sv-bars"></div>
+    <div class="sv-user">
+      <div class="sv-avatar" id="sv-avatar"></div>
+      <div><div class="sv-name" id="sv-name"></div><div class="sv-time" id="sv-time"></div></div>
+    </div>
+    <div class="sv-close" onclick="closeStoryViewer()">✕</div>
+  </div>
+  <div class="sv-body">
+    <div id="sv-content" style="font-size:80px;"></div>
+    <div class="sv-nav">
+      <div class="sv-nav-left" onclick="prevStory()"></div>
+      <div class="sv-nav-right" onclick="nextStory()"></div>
+    </div>
+  </div>
+  <div class="sv-caption" id="sv-caption"></div>
+</div>
+
+<!-- Image Overlay -->
+<div id="img-overlay">
+  <div class="close-img" onclick="closeImgOverlay()">✕</div>
+  <img id="overlay-img" src="">
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== DATA =====
+const CONTACTS = [
+  { id:1, name:'রাহেলা আক্তার', avatar:'👩', online:true, lastMsg:'কেমন আছ?', time:'এখন', unread:3,
+    msgs:[
+      {t:'them', text:'হ্যালো! 😊', time:'১০:০০'},
+      {t:'mine', text:'হ্যালো! ভালো আছি, তুমি?', time:'১০:০১'},
+      {t:'them', text:'আলহামদুলিল্লাহ ভালো! আজকে কী করছ?', time:'১০:০২'},
+      {t:'mine', text:'বাসায় আছি। তুমি?', time:'১০:০৩'},
+      {t:'them', text:'কেমন আছ?', time:'এখন'},
+    ]},
+  { id:2, name:'করিম ভাই', avatar:'👨', online:false, lastMsg:'ঠিক আছে ভাই 👍', time:'১১ মিনিট',  unread:0,
+    msgs:[
+      {t:'mine', text:'ভাই কাল মিটিং কখন?', time:'গতকাল'},
+      {t:'them', text:'বিকাল ৩টায়।', time:'গতকাল'},
+      {t:'mine', text:'ওকে আসব।', time:'গতকাল'},
+      {t:'them', text:'ঠিক আছে ভাই 👍', time:'১১ মিনিট'},
+    ]},
+  { id:3, name:'সুমাইয়া', avatar:'🌸', online:true, lastMsg:'ছবিটা দেখলাম 😍', time:'৩০ মিনিট', unread:1,
+    msgs:[
+      {t:'them', type:'img', src:'https://picsum.photos/200/200?random=1', time:'৩০ মিনিট'},
+      {t:'them', text:'ছবিটা দেখলাম 😍', time:'৩০ মিনিট'},
+    ]},
+  { id:4, name:'তানভীর', avatar:'🦁', online:false, lastMsg:'🎤 ভয়েস মেসেজ', time:'১ ঘন্টা', unread:0,
+    msgs:[
+      {t:'them', type:'voice', dur:'0:12', time:'১ ঘন্টা'},
+    ]},
+  { id:5, name:'নাদিয়া', avatar:'🦋', online:true, lastMsg:'হ্যাঁ ঠিকই বলেছ!', time:'২ ঘন্টা', unread:2,
+    msgs:[
+      {t:'mine', text:'আজকের পরীক্ষা কেমন হলো?', time:'২ ঘন্টা'},
+      {t:'them', text:'হ্যাঁ ঠিকই বলেছ!', time:'২ ঘন্টা'},
+    ]},
+  { id:6, name:'রফিক আংকেল', avatar:'👴', online:false, lastMsg:'আল্লাহ হাফেজ', time:'গতকাল', unread:0,
+    msgs:[
+      {t:'them', text:'কেমন আছ বাবা?', time:'গতকাল'},
+      {t:'mine', text:'ভালো আছি আংকেল। আপনি?', time:'গতকাল'},
+      {t:'them', text:'আল্লাহ হাফেজ', time:'গতকাল'},
+    ]},
+];
+
+const STORIES = [
+  { name:'রাহেলা', avatar:'👩', emoji:'🌺', text:'সুন্দর দিন! ☀️', time:'৫ মিনিট আগে' },
+  { name:'করিম', avatar:'👨', emoji:'⚽', text:'খেলা দেখছি!', time:'২০ মিনিট আগে' },
+  { name:'সুমাইয়া', avatar:'🌸', emoji:'🎂', text:'জন্মদিনের পার্টি!', time:'১ ঘন্টা আগে' },
+  { name:'তানভীর', avatar:'🦁', emoji:'🎵', text:'নতুন গান শুনছি', time:'২ ঘন্টা আগে' },
+  { name:'নাদিয়া', avatar:'🦋', emoji:'📚', text:'পড়াশোনায় ব্যস্ত', time:'৩ ঘন্টা আগে' },
+];
+
+const STORY_EMOJIS = ['😊','🌺','⚽','🎂','🎵','📚','🌙','☀️','❤️','🎉','🍕','✈️','🌊','🦋','🎭','💡','🔥','🌈','🎶','💪','🙏','😂','🥰','😎','🤔','🎮','📸','🌸'];
+
+let currentUser = null, currentChat = null, voiceRecording = false, selectedAvatar = '😊', selectedStoryEmoji = '😊', svIndex = 0, svStories = [], myStories = [];
+let allChats = [...CONTACTS];
+
+// ===== AUTH =====
+function showReg() { document.getElementById('login-view').style.display='none'; document.getElementById('reg-view').style.display=''; }
+function showLogin() { document.getElementById('reg-view').style.display='none'; document.getElementById('login-view').style.display=''; }
+function pickAvatar(el, em) {
+  document.querySelectorAll('.avatar-opt').forEach(a=>a.classList.remove('selected'));
+  el.classList.add('selected'); selectedAvatar = em;
+}
+function doLogin() {
+  const phone = document.getElementById('login-phone').value.trim();
+  const pass = document.getElementById('login-pass').value.trim();
+  if (!phone || !pass) { showToast('সব তথ্য দিন'); return; }
+  currentUser = { name: phone, phone, avatar: '😊', bio: 'হ্যালো! আমি চ্যাট অ্যাপ ব্যবহার করছি।' };
+  enterApp();
+}
+function doRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const phone = document.getElementById('reg-phone').value.trim();
+  if (!name || !phone) { showToast('নাম ও ফোন নম্বর দিন'); return; }
+  currentUser = { name, phone, avatar: selectedAvatar, bio: 'হ্যালো! আমি চ্যাট অ্যাপ ব্যবহার করছি।' };
+  enterApp();
+}
+function enterApp() {
+  showScreen('home-screen');
+  renderProfile(); renderChatList(); renderStoryRow(); renderStatusList();
+}
+function doLogout() {
+  currentUser = null; showScreen('auth-screen');
+  document.getElementById('login-view').style.display='';
+  document.getElementById('reg-view').style.display='none';
+}
+
+// ===== SCREENS =====
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function goHome() { showScreen('home-screen'); currentChat=null; }
+function goProfile() { switchTab('profile', document.querySelector('#home-screen .nav-item:last-child')); }
+function switchTab(tab, el) {
+  const screens = { home:'home-screen', status:'status-screen', profile:'profile-screen' };
+  showScreen(screens[tab]);
+  const allNavs = document.querySelectorAll(`#${screens[tab]} .nav-item`);
+  allNavs.forEach(n=>n.classList.remove('active'));
+  el.classList.add('active');
+  if(tab==='profile') renderProfile();
+}
+
+// ===== RENDER CHAT LIST =====
+function renderChatList(filter='') {
+  const list = document.getElementById('chat-list');
+  const filtered = filter ? allChats.filter(c=>c.name.includes(filter)) : allChats;
+  list.innerHTML = filtered.map(c=>`
+    <div class="chat-item" onclick="openChat(${c.id})">
+      <div class="chat-avatar">${c.avatar}${c.online?'<div class="online-dot"></div>':''}</div>
+      <div class="chat-info">
+        <div class="chat-name">${c.name}</div>
+        <div class="chat-preview">${c.lastMsg}</div>
+      </div>
+      <div class="chat-meta">
+        <div class="chat-time">${c.time}</div>
+        ${c.unread>0?`<div class="chat-badge">${c.unread}</div>`:''}
+      </div>
+    </div>`).join('');
+}
+function filterChats(v) { renderChatList(v); }
+
+// ===== STORY ROW =====
+function renderStoryRow() {
+  const row = document.getElementById('story-row');
+  let html = `<div class="story-item" onclick="openStoryCreator()">
+    <div class="story-ring"><div class="inner">➕</div><div class="story-add-btn">+</div></div>
+    <div class="story-name">আমার</div>
+  </div>`;
+  [...myStories.slice(-1).map((s,i)=>({...s,isOwn:true})), ...STORIES].forEach((s,i)=>{
+    html += `<div class="story-item" onclick="viewStory(${i})">
+      <div class="story-ring ${i>2?'seen':''}"><div class="inner">${s.avatar||s.emoji}</div></div>
+      <div class="story-name">${s.name}</div>
+    </div>`;
+  });
+  row.innerHTML = html;
+}
+
+// ===== CHAT =====
+function openChat(id) {
+  currentChat = CONTACTS.find(c=>c.id===id);
+  currentChat.unread = 0;
+  document.getElementById('ct-avatar').textContent = currentChat.avatar;
+  document.getElementById('ct-name').textContent = currentChat.name;
+  document.getElementById('ct-status').textContent = currentChat.online ? '● অনলাইন' : 'অফলাইন';
+  document.getElementById('ct-status').style.color = currentChat.online ? 'var(--online)' : 'var(--text2)';
+  renderMessages(); showScreen('chat-screen');
+  // Show typing after 2s
+  setTimeout(()=>{
+    if(currentChat) {
+      const m = document.getElementById('messages');
+      const d = document.createElement('div');
+      d.className='msg-row'; d.id='typing-row';
+      d.innerHTML='<div class="typing-bubble"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div>';
+      m.appendChild(d); m.scrollTop=m.scrollHeight;
+      setTimeout(()=>{ const r=document.getElementById('typing-row'); if(r)r.remove(); }, 2500);
+    }
+  }, 3000);
+}
+function renderMessages() {
+  const el = document.getElementById('messages');
+  el.innerHTML = `<div class="date-divider"><span>আজ</span></div>`;
+  (currentChat.msgs||[]).forEach(m => el.innerHTML += buildBubble(m));
+  el.scrollTop = el.scrollHeight;
+}
+function buildBubble(m) {
+  const side = m.t==='mine'?'mine':'them';
+  if(m.type==='img') return `<div class="msg-row ${side}"><div class="bubble-img" onclick="openImgOverlay('${m.src}')"><img src="${m.src}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22><rect fill=%22%23333%22 width=%22200%22 height=%22150%22/><text x=%2250%%22 y=%2250%%22 fill=%22%23aaa%22 text-anchor=%22middle%22>🖼️ ছবি</text></svg>'"></div></div>`;
+  if(m.type==='voice') return `<div class="msg-row ${side}"><div class="voice-bubble ${side}" onclick="showToast('▶ বাজছে...')"><span class="play-btn">▶</span><div class="voice-wave">${'<div class="wbar"></div>'.repeat(7)}</div><span class="voice-dur">${m.dur}</span></div></div>`;
+  return `<div class="msg-row ${side}"><div class="bubble ${side}">${m.text}<div class="bubble-time">${m.time} ${side==='mine'?'✓✓':''}</div></div></div>`;
+}
+function sendMsg() {
+  const inp = document.getElementById('msg-input');
+  const txt = inp.value.trim(); if(!txt || !currentChat) return;
+  const m = {t:'mine', text:txt, time: new Date().toLocaleTimeString('bn-BD',{hour:'2-digit',minute:'2-digit'})};
+  currentChat.msgs.push(m);
+  currentChat.lastMsg = txt; currentChat.time = 'এখন';
+  inp.value='';
+  const el=document.getElementById('messages');
+  el.innerHTML+=buildBubble(m); el.scrollTop=el.scrollHeight;
+  document.getElementById('emoji-picker').classList.remove('active');
+  // Auto reply after 1.5s
+  setTimeout(()=>{
+    if(!currentChat) return;
+    const replies=['হ্যাঁ, ঠিকই বলেছ! 😊','আচ্ছা বুঝলাম 👍','ওকে!','হাহা 😂','সত্যিই?','দারুণ!','ইনশাআল্লাহ 🙏'];
+    const rep = {t:'them', text:replies[Math.floor(Math.random()*replies.length)], time: new Date().toLocaleTimeString('bn-BD',{hour:'2-digit',minute:'2-digit'})};
+    currentChat.msgs.push(rep); currentChat.lastMsg=rep.text;
+    el.innerHTML+=buildBubble(rep); el.scrollTop=el.scrollHeight;
+  }, 1500);
+}
+
+// ===== EMOJI PICKER =====
+const EMOJIS = ['😊','😂','😍','🥰','😎','🤔','😢','😡','👍','❤️','🙏','🎉','🔥','💪','✨','🌸','🎵','🍕','⚽','🌟','😁','🤣','😭','🥺','😏','🤗','💯','🎶'];
+function buildEmojiPicker() {
+  const ep = document.getElementById('emoji-picker');
+  ep.innerHTML = EMOJIS.map(e=>`<div class="ep-em" onclick="addEmoji('${e}')">${e}</div>`).join('');
+}
+function toggleEmoji() { document.getElementById('emoji-picker').classList.toggle('active'); }
+function addEmoji(e) { document.getElementById('msg-input').value += e; document.getElementById('msg-input').focus(); }
+
+// ===== VOICE =====
+function toggleVoice() {
+  voiceRecording = !voiceRecording;
+  document.getElementById('voice-indicator').classList.toggle('active', voiceRecording);
+  document.getElementById('input-wrap').style.display = voiceRecording ? 'none' : 'flex';
+  document.getElementById('voice-btn').textContent = voiceRecording ? '⏹' : '🎤';
+  if(!voiceRecording) {
+    const durs=['0:05','0:08','0:12','0:15','0:20','0:30'];
+    const m={t:'mine', type:'voice', dur:durs[Math.floor(Math.random()*durs.length)], time:new Date().toLocaleTimeString('bn-BD',{hour:'2-digit',minute:'2-digit'})};
+    currentChat.msgs.push(m);
+    const el=document.getElementById('messages');
+    el.innerHTML+=buildBubble(m); el.scrollTop=el.scrollHeight;
+  }
+}
+document.getElementById('msg-input').addEventListener('input', function() {
+  const hasText = this.value.trim().length > 0;
+  document.getElementById('send-btn').style.display = hasText ? 'flex' : 'none';
+  document.getElementById('voice-btn').style.display = hasText ? 'none' : 'flex';
+});
+
+// ===== IMAGE =====
+function pickImage() { document.getElementById('img-input').click(); }
+function handleImg(e) {
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const m={t:'mine', type:'img', src:ev.target.result, time:new Date().toLocaleTimeString('bn-BD',{hour:'2-digit',minute:'2-digit'})};
+    currentChat.msgs.push(m);
+    const el=document.getElementById('messages');
+    el.innerHTML+=buildBubble(m); el.scrollTop=el.scrollHeight;
+    showToast('ছবি পাঠানো হয়েছে ✓');
+  };
+  reader.readAsDataURL(file); e.target.value='';
+}
+function openImgOverlay(src) {
+  document.getElementById('overlay-img').src=src;
+  document.getElementById('img-overlay').classList.add('active');
+}
+function closeImgOverlay() { document.getElementById('img-overlay').classList.remove('active'); }
+
+// ===== STATUS =====
+function renderStatusList() {
+  const el = document.getElementById('status-list');
+  const all = [...myStories.map(s=>({...s,name:'আমার স্ট্যাটাস',avatar:currentUser?currentUser.avatar:'😊'})), ...STORIES];
+  el.innerHTML = all.map((s,i)=>`
+    <div class="chat-item" onclick="viewStory(${i})">
+      <div class="chat-avatar" style="background:linear-gradient(135deg,var(--accent),var(--accent2))">${s.avatar}</div>
+      <div class="chat-info">
+        <div class="chat-name">${s.name}</div>
+        <div class="chat-preview">${s.emoji} ${s.text||''}</div>
+      </div>
+      <div class="chat-time">${s.time||'এইমাত্র'}</div>
+    </div>`).join('') || '<div style="text-align:center;padding:40px;color:var(--text2)">কোনো স্ট্যাটাস নেই</div>';
+}
+
+// Story Creator
+function openStoryCreator() {
+  const grid = document.getElementById('story-emoji-grid');
+  grid.innerHTML = STORY_EMOJIS.map(e=>`<div class="emoji-btn ${e===selectedStoryEmoji?'selected':''}" onclick="pickStoryEmoji(this,'${e}')">${e}</div>`).join('');
+  document.getElementById('story-creator').classList.add('active');
+}
+function closeStoryCreator() { document.getElementById('story-creator').classList.remove('active'); }
+function pickStoryEmoji(el,em) {
+  document.querySelectorAll('.emoji-btn').forEach(b=>b.classList.remove('selected'));
+  el.classList.add('selected'); selectedStoryEmoji=em;
+  document.getElementById('sc-preview').textContent=em;
+}
+function postStory() {
+  const text = document.getElementById('sc-text').value.trim();
+  myStories.push({ emoji:selectedStoryEmoji, text:text||'স্ট্যাটাস দিয়েছি!', time:'এইমাত্র', name:'আমার', avatar:currentUser?currentUser.avatar:'😊' });
+  document.getElementById('sc-text').value='';
+  closeStoryCreator(); renderStoryRow(); renderStatusList();
+  showToast('স্ট্যাটাস দেওয়া হয়েছে ✓');
+}
+
+// Story Viewer
+function viewStory(i) {
+  svStories = [...myStories.map(s=>({...s,name:currentUser?.name||'আমি',avatar:currentUser?.avatar||'😊'})), ...STORIES];
+  svIndex = Math.min(i, svStories.length-1);
+  renderStoryViewer();
+  document.getElementById('story-viewer').classList.add('active');
+}
+function renderStoryViewer() {
+  const s = svStories[svIndex];
+  if(!s) { closeStoryViewer(); return; }
+  document.getElementById('sv-avatar').textContent = s.avatar;
+  document.getElementById('sv-name').textContent = s.name;
+  document.getElementById('sv-time').textContent = s.time||'এইমাত্র';
+  document.getElementById('sv-content').textContent = s.emoji;
+  document.getElementById('sv-caption').textContent = s.text||'';
+  const bars = document.getElementById('sv-bars');
+  bars.innerHTML = svStories.map((_,i2)=>`<div class="sv-bar"><div class="sv-fill ${i2<svIndex?'done':i2===svIndex?'active':''}"></div></div>`).join('');
+}
+function nextStory() { if(svIndex<svStories.length-1){svIndex++;renderStoryViewer();}else closeStoryViewer(); }
+function prevStory() { if(svIndex>0){svIndex--;renderStoryViewer();} }
+function closeStoryViewer() { document.getElementById('story-viewer').classList.remove('active'); }
+
+// ===== PROFILE =====
+function renderProfile() {
+  if(!currentUser) return;
+  document.getElementById('prof-avatar-big').childNodes[0].textContent=currentUser.avatar;
+  document.getElementById('prof-name').textContent=currentUser.name;
+  document.getElementById('prof-bio').textContent=currentUser.bio;
+  document.getElementById('prof-phone').textContent=currentUser.phone||'01XXXXXXXXX';
+}
+function editBio() {
+  const nb=prompt('নতুন বায়ো লিখুন:',currentUser.bio);
+  if(nb!==null){currentUser.bio=nb;renderProfile();showToast('বায়ো আপডেট হয়েছে ✓');}
+}
+
+// ===== TOAST =====
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ===== INIT =====
+buildEmojiPicker();
+// Show send/voice btn logic init
+document.getElementById('send-btn').style.display='none';
+document.getElementById('voice-btn').style.display='flex';
+
+setTimeout(()=>{
+  const splash=document.getElementById('splash');
+  splash.style.opacity='0';
+  setTimeout(()=>{ splash.style.display='none'; showScreen('auth-screen'); },500);
+},2000);
+</script>
+</body>
+</html>
